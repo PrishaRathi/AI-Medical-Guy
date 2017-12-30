@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // --- ExpertSystem (MedicalExpert)
-// --- Written By Prisha Rathi [16-APR-2014]
+// --- Written By Prisha Rathi [18-APR-2014]
 // -----------------------------------------------------------------------------
 // --- Expert System for dignosing the diseases based on symptoms
 // -----------------------------------------------------------------------------
@@ -12,7 +12,7 @@
 // -----------------------------------------------------------------------------
 #include "Database.h"
 // -----------------------------------------------------------------------------
-#define VERSION "V 1.1"
+#define VERSION "V 1.2"
 // -----------------------------------------------------------------------------
 
 
@@ -119,12 +119,20 @@ int main(int argc, char* argv[])
 void InitialGreetings()
 {
     // --- start the conversation
+    char s_patient_feeling[ 64 ];
     printf( "\n" );
-    printf( "Hello! My name is HAL9000. I am your medical expert [%s]\n", VERSION );
+    printf( "Hello! My name is AI the Medical Guy. I am your medical expert [%s]\n", VERSION );
     printf( "What's your name?\n" );
     gets( g__patient );
     printf( "\n" );
-    printf( "Hello %s! How are you today? Let's see what's bothering you...\n", g__patient );
+    printf( "Hello %s! How are you today?\n", g__patient );
+    gets( s_patient_feeling );
+    printf( "\n" );
+    printf( "Let's see if I can help you, but you will have to be patient with me.\n" );
+    printf( "I need to thoroughly check your symptoms, so please answer the questions\n" );
+    printf( "even though many of them may not seem to be relevant to your condition..." );
+    printf( "\n" );
+    printf( "Let's see what's bothering you...\n", g__patient );
 }
 // -----------------------------------------------------------------------------
 void FarewellGreetings()
@@ -132,7 +140,7 @@ void FarewellGreetings()
     // --- say goodbye...
     char s[ 64 ];
     printf( "\n" );
-    printf( "Get well soon %s! Goodbye!!\n", g__patient );
+    printf( "Get well soon %s :) ! Goodbye!!\n", g__patient );
     printf( "Press ENTER key to exit...\n" );
     gets( s );
 }
@@ -142,7 +150,7 @@ void ComplicatedDiseaseMessage()
     // --- the disease is too complicated for us to handle...
     // --- say goodbye...
     printf( "\n" );
-    printf( "Sorry %s! Your symptoms are too complicated for me to handle...\n", g__patient );
+    printf( "Sorry %s! Your symptoms are too complicated for me to handle :(\n", g__patient );
     printf( "May be its time for you to see your family physician...\n" );
 }
 // -----------------------------------------------------------------------------
@@ -150,7 +158,8 @@ void DiagnosisMessage( int disease_idx )
 {
     // --- we have found a probable disease
     printf( "\n" );
-    printf( "%s! Looks like you may be suffering from %s\n", g__patient, g__disease[ disease_idx ].m_name );
+    printf( "%s! It seems like the cause of suffering is %s...\n", g__patient, g__disease[ disease_idx ].m_name );
+    printf( "%s.", g__disease[ disease_idx ].m_treatment ); 
 }
 // -----------------------------------------------------------------------------
 int GetNextSymptomToCheck()
@@ -265,13 +274,13 @@ void CheckSymptom( int symptom_idx )
         if( _stricmp( answer, "yes" ) == 0 )
         {
             // --- record this symptom
-            g__valid_symptoms_collection[ g__num_valid_symptoms++ ] = symptom_idx;
+            g__valid_symptoms_collection[ g__num_valid_symptoms++ ] = g__symptoms[ symptom_idx ].m_code;
             return;
         }
         if( _stricmp( answer, "no" ) == 0 )
         {
             // --- record this symptom
-            g__invalid_symptoms_collection[ g__num_invalid_symptoms++ ] = symptom_idx;
+            g__invalid_symptoms_collection[ g__num_invalid_symptoms++ ] = g__symptoms[ symptom_idx ].m_code;
             return;
         }
         printf( "\n" );
@@ -291,6 +300,7 @@ int CheckForDisease()
     {
         // --- check the symptoms for this disease
         int valid_symptoms = 0;
+        int valid_mandatory_symptoms = 0;
         for( j = 0; g__disease[ i ].m_symptoms[ j ] > 0; j++ )
         {
             // --- loop through our collected symptoms and see if they match
@@ -299,15 +309,49 @@ int CheckForDisease()
                 if( g__disease[ i ].m_symptoms[ j ] == g__valid_symptoms_collection[ k ] )
                 {
                     valid_symptoms++;
+                    break;
                 }
             }
         }
 
+
+
         // --- did we get minimum number of symptoms for this disease?
-        if( valid_symptoms >= g__disease[ i ].m_min_symptoms )
+        if( valid_symptoms < g__disease[ i ].m_min_symptoms )
         {
-            // --- we found the matching disease
-            return( i );
+            // --- this is not a matching disease, so go on to the next disease
+            continue;
+        }
+
+        
+        
+        // -- with minimum symptoms available, check for mandatory symptoms for this disease
+        for( j = 0; g__disease[ i ].m_symptoms[ j ] > 0; j++ )
+        {
+            // --- loop through our collected symptoms and see if they match
+            for( k = 0; k < g__num_valid_symptoms; k++ )
+            {
+                // --- check for the first mandatory symptoms
+                if( g__disease[ i ].m_symptoms[ j ] == g__valid_symptoms_collection[ k ] )
+                {
+                    valid_mandatory_symptoms++;
+                    break;
+                }
+            }
+
+            // --- did we meet the mandatory symptoms criteria for this disease?
+            if( valid_mandatory_symptoms == g__disease[ i ].m_mandatory_symptoms )
+            {
+                // --- we found a matching disease
+                return( i );
+            }
+
+            // -- have we checked all the mandatory symptoms?
+            if( ( j + 1 ) == g__disease[ i ].m_mandatory_symptoms )
+            {
+                // --- this disease doesnot meet our criteria for mandatory disease
+                break;
+            }
         }
     }
 
